@@ -1,15 +1,16 @@
         lw      0       2       mcand   # load multiplicand (3)  
         lw      0       3       mplier  # load multiplier (4)
         lw      0       4       mask    # load mask (1)
-        lw      0       5       count
-                                        # R6 is temp register
+        lw      0       5       count   # R6,R7 are temp registers
                                         
+
         add     0       0       1       # initialize result = 0
 
 start   beq     0       5       done    # branch if count is 0
 
-        nand    3       4       6       # and 3 and 4, store in 6
-        nand    6       6       6       
+        nor     3       3       6       # not(A) = A nor A
+        nor     4       4       7       # not(A) nor not(B) = A and B
+        nor     6       7       6       # mplier and mask, store in 6
 
         beq     6       0       noAdd   # if the mplier and mask is 0, skip addition
         add     1       2       1       # add multiplicand to result
