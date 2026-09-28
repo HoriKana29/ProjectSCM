@@ -3,6 +3,16 @@
 #include <string.h>
 
 #define MAXLINELENGTH 1000
+#define MAXSYMBOLS 65536
+
+typedef struct 
+{
+    char name[MAXLINELENGTH];
+    int address;
+} Symbol;
+
+Symbol symbloTable[MAXSYMBOLS];
+
 
 int readAndParse(FILE *, char *, char *, char *, char *, char *);
 int isNumber(char *);
@@ -34,21 +44,74 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    /* here is an example for how to use readAndParse to read a line from
-        inFilePtr */
-    if (! readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2) ) {
-        /* reached end of file */
+    int lineNumber = 0;
+    int symbolCountNumber = 0;
+    int addressCountNumber = 0;
+    while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2))
+    {
+        if (label[0] == '\0' && opcode[0] == '\0') {
+            continue;
+        }
+
+        if(label[0] != '\0') {
+            for(int i = 0; i < symbolCountNumber; i++){
+                if(strcmp(symbloTable[i].name, label) == 0){
+                    printf("error: duplicate label %s\n", label);
+                    exit(1);
+                }
+            }
+
+            if(symbolCountNumber >= MAXSYMBOLS){
+                printf("error: symbol table is full\n");
+                exit(1);
+            }
+
+            strcpy(symbloTable[symbolCountNumber].name, label);
+            symbloTable[symbolCountNumber].address = addressCountNumber;
+            symbolCountNumber++;
+        }
+        
+        printf("Line %d\n", lineNumber);
+        printf("Label = [%s]\n", label);
+        printf("Opcode = [%s]\n", opcode);
+        printf("arg0 = [%s]\n", arg0);
+        printf("arg1 = [%s]\n", arg1);
+        printf("arg2 = [%s]\n", arg2);
+        printf("---------------------------\n");
+
+        addressCountNumber++;
+        lineNumber++;
+
     }
 
-    /* this is how to rewind the file ptr so that you start reading from the
-        beginning of the file */
+    printf("Symbol Table:\n");
+    for(int i = 0; i < symbolCountNumber; i++){
+        printf("%s -> %d\n", symbloTable[i].name, symbloTable[i].address);
+    }
+
     rewind(inFilePtr);
 
-    /* after doing a readAndParse, you may want to do the following to test the
-        opcode */
-    if (!strcmp(opcode, "add")) {
-        /* do whatever you need to do for opcode "add" */
-    }
+    fclose(inFilePtr);
+    fclose(outFilePtr);
+    
+
+    /* here is an example for how to use readAndParse to read a line from
+        inFilePtr */
+    // if (! readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2) ) {
+    //     /* reached end of file */
+    //     printf("End of file");
+    //     return 0;
+    // }
+
+    // /* this is how to rewind the file ptr so that you start reading from the
+    //     beginning of the file */
+    // rewind(inFilePtr);
+
+    // /* after doing a readAndParse, you may want to do the following to test the
+    //     opcode */
+    // if (!strcmp(opcode, "add")) {
+    //     /* do whatever you need to do for opcode "add" */
+    // }
 
     return(0);
 }
@@ -82,8 +145,12 @@ int readAndParse(FILE *inFilePtr, char *label, char *opcode, char *arg0,
     /* check for line too long (by looking for a \n) */
     if (strchr(line, '\n') == NULL) {
         /* line too long */
-	printf("error: line too long\n");
-	exit(1);
+    int nextChar = fgetc(inFilePtr);
+
+    if (nextChar != EOF) {
+        printf("error: line too long\n");
+        exit(1);
+    }
     }
 
     /* is there a label? */
