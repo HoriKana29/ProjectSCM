@@ -54,6 +54,22 @@ int main(int argc, char *argv[])
         }
 
         if(label[0] != '\0') {
+
+            int leng = strlen(label);
+            if(leng > 6) { //Handle > 6 
+                printf("error: invalid label %s Length more than 6 characters\n", label);
+                exit(1);
+            }else if(!isalpha(label[0])) { //Handle not start with alphabet
+                printf("error: invalid label %s Not starting with alphabet\n", label);
+                exit(1);
+            }
+            for(int i = 0; i < leng; i++){
+                if(!isalnum(label[i])) { //Handle not alphanumeric
+                    printf("error: invalid label %s is Not alphanumeric\n", label);
+                    exit(1);
+                }
+            }
+
             for(int i = 0; i < symbolCountNumber; i++){
                 if(strcmp(symbloTable[i].name, label) == 0){
                     printf("error: duplicate label %s\n", label);

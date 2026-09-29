@@ -1,19 +1,5 @@
-
-
-
         lw 0 1 five
 loop    add 1 2 3
-
-
-
-
         jalr 4 5
-
-
-
         halt end of program
-
-
-
-
 five    .fill 5
