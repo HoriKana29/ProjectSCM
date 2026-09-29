@@ -1,10 +1,6 @@
-// Simulator
-
-/* instruction-level simulator */
-
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define NUMMEMORY 65536 /* maximum number of words in memory */
 #define NUMREGS 8 /* number of machine registers */
@@ -18,7 +14,7 @@ typedef struct stateStruct {
 } stateType;
 
 void printState(stateType *);
-int convertNum(int num);
+
 int main(int argc, char *argv[])
 {
     char line[MAXLINELENGTH];
@@ -64,13 +60,4 @@ void printState(stateType *statePtr)
 	    printf("\t\treg[ %d ] %d\n", i, statePtr->reg[i]);
 	}
     printf("end state\n");
-}
-
-int convertNum(int num)
-{
-    /* convert a 16-bit number into a 32-bit integer */
-    if (num & (1 << 15)) {
-    num -= (1 << 16);
-    }
-    return(num);
 }
