@@ -1,6 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <ctype.h>
 
 #define MAXLINELENGTH 1000
 #define MAXSYMBOLS 65536
@@ -11,11 +15,16 @@ typedef struct
     int address;
 } Symbol;
 
-Symbol symbloTable[MAXSYMBOLS];
+Symbol symbolTable[MAXSYMBOLS];
 
 
 int readAndParse(FILE *, char *, char *, char *, char *, char *);
 int isNumber(char *);
+int findLabelAddress(const char *, const Symbol[], int);
+int convertNumber(const char *, long *);
+int convertRegister(const char *);
+int32_t resolveFill(const char *,const Symbol table[], int count);
+int convertOffset(const char *, const char *, int, const Symbol[], int);
 
 int main(int argc, char *argv[])
 {
@@ -49,8 +58,14 @@ int main(int argc, char *argv[])
     int addressCountNumber = 0;
     while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2))
     {
+        lineNumber++;
         if (label[0] == '\0' && opcode[0] == '\0') {
             continue;
+        }
+
+        if(addressCountNumber >= 65536){
+            printf("errpr: program exceeds memory size\n");
+            exit(1);
         }
 
         if(label[0] != '\0') {
@@ -71,7 +86,7 @@ int main(int argc, char *argv[])
             }
 
             for(int i = 0; i < symbolCountNumber; i++){
-                if(strcmp(symbloTable[i].name, label) == 0){
+                if(strcmp(symbolTable[i].name, label) == 0){
                     printf("error: duplicate label %s\n", label);
                     exit(1);
                 }
@@ -82,8 +97,8 @@ int main(int argc, char *argv[])
                 exit(1);
             }
 
-            strcpy(symbloTable[symbolCountNumber].name, label);
-            symbloTable[symbolCountNumber].address = addressCountNumber;
+            strcpy(symbolTable[symbolCountNumber].name, label);
+            symbolTable[symbolCountNumber].address = addressCountNumber;
             symbolCountNumber++;
         }
         
@@ -96,38 +111,80 @@ int main(int argc, char *argv[])
         printf("---------------------------\n");
 
         addressCountNumber++;
-        lineNumber++;
 
     }
 
     printf("Symbol Table:\n");
     for(int i = 0; i < symbolCountNumber; i++){
-        printf("%s -> %d\n", symbloTable[i].name, symbloTable[i].address);
+        printf("%s -> %d\n", symbolTable[i].name, symbolTable[i].address);
     }
 
     rewind(inFilePtr);
 
-    fclose(inFilePtr);
-    fclose(outFilePtr);
+    //pass2
+    addressCountNumber = 0;
+    lineNumber = 0;
+    while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2))
+    {
+        lineNumber++;
+        if (label[0] == '\0' && opcode[0] == '\0') {
+            continue;
+        }
+
+        uint32_t machineCode = 0;
+
+        if(strcmp(opcode, ".fill") == 0){
+            int32_t fillValue = resolveFill(arg0, symbolTable, symbolCountNumber);
+            fprintf(outFilePtr, "%d\n", fillValue);
+        }else{
+            if(strcmp(opcode, "add") == 0 || strcmp(opcode, "nand") == 0){
+                uint32_t opcodeNumber;
+                if(strcmp(opcode, "add") == 0){
+                    opcodeNumber = 0;
+                }else{
+                    opcodeNumber = 1;
+                }
+                uint32_t regA = convertRegister(arg0);
+                uint32_t regB = convertRegister(arg1);
+                uint32_t destReg = convertRegister(arg2);
+
+                machineCode = (opcodeNumber << 22) | (regA << 19) | (regB << 16) | destReg; // 6 -> 110 << 22
+            }else if(strcmp(opcode, "lw") == 0 || strcmp(opcode, "sw") == 0 || strcmp(opcode, "beq") == 0){
+                uint32_t opcodeNumber;
+                if (strcmp(opcode, "lw") == 0) {
+                    opcodeNumber = 2;
+                } else if (strcmp(opcode, "sw") == 0) {
+                    opcodeNumber = 3;
+                } else {
+                    opcodeNumber = 4;
+                }
+
+                uint32_t regA = convertRegister(arg0);
+                uint32_t regB = convertRegister(arg1);
+                
+                uint16_t offset = (convertOffset(arg2, opcode, addressCountNumber, symbolTable, symbolCountNumber));
+                machineCode = (opcodeNumber << 22) | (regA << 19) | (regB << 16) | (uint32_t)offset;
+            }else if(strcmp(opcode, "jalr") == 0){
+                uint32_t regA = convertRegister(arg0);
+                uint32_t regB = convertRegister(arg1);
+
+                machineCode = (5 << 22) | (regA << 19) | (regB << 16);
+            }else if(strcmp(opcode, "halt") == 0){
+                machineCode = 6 << 22;
+            }else if(strcmp(opcode, "noop") == 0){
+                machineCode = 7 << 22;
+            }else{
+                printf("error: unknown opcode [%s] at line %d\n", opcode, lineNumber);
+                exit(1);
+            }
+            fprintf(outFilePtr, "%u\n", machineCode);
+        }
+        addressCountNumber++;
+    }
     
 
-    /* here is an example for how to use readAndParse to read a line from
-        inFilePtr */
-    // if (! readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2) ) {
-    //     /* reached end of file */
-    //     printf("End of file");
-    //     return 0;
-    // }
-
-    // /* this is how to rewind the file ptr so that you start reading from the
-    //     beginning of the file */
-    // rewind(inFilePtr);
-
-    // /* after doing a readAndParse, you may want to do the following to test the
-    //     opcode */
-    // if (!strcmp(opcode, "add")) {
-    //     /* do whatever you need to do for opcode "add" */
-    // }
+    fclose(inFilePtr);
+    fclose(outFilePtr);
 
     return(0);
 }
@@ -161,12 +218,12 @@ int readAndParse(FILE *inFilePtr, char *label, char *opcode, char *arg0,
     /* check for line too long (by looking for a \n) */
     if (strchr(line, '\n') == NULL) {
         /* line too long */
-    int nextChar = fgetc(inFilePtr);
+        int nextChar = fgetc(inFilePtr);
 
-    if (nextChar != EOF) {
-        printf("error: line too long\n");
-        exit(1);
-    }
+        if (nextChar != EOF) {
+            printf("error: line too long\n");
+            exit(1);
+        }
     }
 
     /* is there a label? */
@@ -185,10 +242,106 @@ int readAndParse(FILE *inFilePtr, char *label, char *opcode, char *arg0,
     return(1);
 }
 
-int isNumber(char *string)
+int isNumber(char *string) // 0 used
 {
     /* return 1 if string is a number */
     /* return 0 ถ้า empty string หรือ string ไม่ใช่เลข(ฐาน 10)*/
     int i;
     return( (sscanf(string, "%d", &i)) == 1);
+}
+
+int findLabelAddress(const char *name, const Symbol table[], int count)
+{
+    for (int i = 0; i < count; i++) {
+        if (strcmp(table[i].name, name) == 0) {
+            return table[i].address;
+        }
+    }
+
+    printf("error: undefined label %s\n", name);
+    exit(1);
+}
+
+int convertNumber(const char *text, long *result)
+{
+    char *pointingIndex;
+
+    errno = 0;
+    long value = strtol(text, &pointingIndex, 10);
+
+    if (pointingIndex == text || *pointingIndex != '\0') {
+        return 0;
+    }
+
+    if (errno == ERANGE) {
+        printf("error: number out of range: %s\n", text);
+        exit(1);
+    }
+
+    *result = value;
+    return 1;
+}
+
+int convertRegister(const char *text)
+{
+    long number;
+
+    if (!convertNumber(text, &number)) {
+        printf("error: invalid register: [%s]\n", text);
+        exit(1);
+    }
+
+    if (number < 0 || number > 7) {
+        printf("error: register out of range: %s\n", text);
+        exit(1);
+    }
+
+    return (int)number;
+}
+
+int convertOffset(const char *text, const char *opcode, int currentAddress, const Symbol table[], int count) 
+{ 
+    long offset; 
+ 
+    if (text[0] == '\0') {
+        printf("error: missing offset\n"); 
+        exit(1); 
+    } 
+ 
+    if (!convertNumber(text, &offset)) { 
+        int targetAddress = findLabelAddress(text, table, count);
+ 
+        if (strcmp(opcode, "beq") == 0) {
+            offset = (long)targetAddress - ((long)currentAddress + (long)1); 
+        } else { 
+            offset = targetAddress; 
+        } 
+    } 
+ 
+    if (offset < -32768 || offset > 32767) { 
+        printf("error: offset out of range: %ld\n", offset); 
+        exit(1); 
+    } 
+ 
+    return (int)offset; 
+}
+
+int32_t resolveFill(const char *text, const Symbol table[], int count){
+    long value;
+
+    if(text[0] == '\0'){
+        printf("error: missing .fill value\n");
+        exit(1);
+    }
+
+    if(!convertNumber(text, &value)){
+        value = findLabelAddress(text, table, count);
+    }
+
+    if(value < INT32_MIN || value > INT32_MAX){
+        printf("error: .fill value out of range: %s\n", text);
+        exit(1);
+    }
+
+    return value;
 }
