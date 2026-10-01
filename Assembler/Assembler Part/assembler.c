@@ -9,7 +9,7 @@
 #define MAXLINELENGTH 1000
 #define MAXSYMBOLS 65536
 
-typedef struct 
+typedef struct //โครงสร้างสำหรับเก็บlabelและaddress 
 {
     char name[MAXLINELENGTH];
     int address;
@@ -56,49 +56,51 @@ int main(int argc, char *argv[])
     int lineNumber = 0;
     int symbolCountNumber = 0;
     int addressCountNumber = 0;
-    while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2))
+
+    //Pass 1: อ่านไฟล์และสร้าง symbol table
+    while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2)) 
     {
         lineNumber++;
-        if (label[0] == '\0' && opcode[0] == '\0') {
+        if (label[0] == '\0' && opcode[0] == '\0') { //ถ้าไม่มีlabelและopcodeให้ข้ามไป
             continue;
         }
 
-        if(addressCountNumber >= 65536){
-            printf("errpr: program exceeds memory size\n");
+        if(addressCountNumber >= 65536){ //เช็ตmemory overflow   
+            printf("error: program exceeds memory size\n");
             exit(1);
         }
 
         if(label[0] != '\0') {
 
             int leng = strlen(label);
-            if(leng > 6) { //Handle > 6 
+            if(leng > 6) { //เช็คความยาวของlabel ถ้าเกิน 6ตัวอักษรให้ขึ้นerrorแล้วข้าม
                 printf("error: invalid label %s Length more than 6 characters\n", label);
                 exit(1);
-            }else if(!isalpha(label[0])) { //Handle not start with alphabet
+            }else if(!isalpha(label[0])) { //เช็คตัวอักษรตัวแรกของlabel ถ้าไม่ใช่ตัวอักษรให้ขึ้นerrorแล้วข้าม
                 printf("error: invalid label %s Not starting with alphabet\n", label);
                 exit(1);
             }
-            for(int i = 0; i < leng; i++){
-                if(!isalnum(label[i])) { //Handle not alphanumeric
+            for(int i = 0; i < leng; i++){ //เช็คตัวอักษรของlabelตัวที่เหลือ ถ้าไม่ใช่ตัวอักษรหรือตัวเลขให้ขึ้นerrorแล้วข้าม
+                if(!isalnum(label[i])) {
                     printf("error: invalid label %s is Not alphanumeric\n", label);
                     exit(1);
                 }
             }
 
-            for(int i = 0; i < symbolCountNumber; i++){
+            for(int i = 0; i < symbolCountNumber; i++){ //เช็คlabelซ้ำ ถ้าซ้ำให้ขึ้นerrorแล้วข้าม
                 if(strcmp(symbolTable[i].name, label) == 0){
                     printf("error: duplicate label %s\n", label);
                     exit(1);
                 }
             }
 
-            if(symbolCountNumber >= MAXSYMBOLS){
+            if(symbolCountNumber >= MAXSYMBOLS){ //เช็คsymbolTableเต็ม ถ้าเต็มให้ขึ้นerrorแล้วข้าม
                 printf("error: symbol table is full\n");
                 exit(1);
             }
 
-            strcpy(symbolTable[symbolCountNumber].name, label);
-            symbolTable[symbolCountNumber].address = addressCountNumber;
+            strcpy(symbolTable[symbolCountNumber].name, label); //เก็บlabelลงในsymbolTable
+            symbolTable[symbolCountNumber].address = addressCountNumber; //เก็บaddressลงในsymbolTable
             symbolCountNumber++;
         }
         
@@ -121,23 +123,26 @@ int main(int argc, char *argv[])
 
     rewind(inFilePtr);
 
-    //pass2
+    //Pass 2: อ่านไฟล์และแปลงเป็นโค้ดเครื่อง
+    //แปลง Register และ Offsetทั้งแบบตัวเลขและ Symbolic Address
+    //ประกอบบิตตามฟอร์แมต SMC
+    //เขียนตัวเลข Machine Code ฐาน 10 ลงไฟล์ Output
     addressCountNumber = 0;
     lineNumber = 0;
     while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2))
     {
         lineNumber++;
-        if (label[0] == '\0' && opcode[0] == '\0') {
+        if (label[0] == '\0' && opcode[0] == '\0') { //ถ้าไม่มีlabelและopcodeให้ข้ามไป
             continue;
         }
 
         uint32_t machineCode = 0;
 
-        if(strcmp(opcode, ".fill") == 0){
+        if(strcmp(opcode, ".fill") == 0){ //ถ้าopcodeเป็น.fillให้เรียกฟังก์ชัน resolveFill เพื่อหาค่า fill แล้วเขียนลงไฟล์
             int32_t fillValue = resolveFill(arg0, symbolTable, symbolCountNumber);
             fprintf(outFilePtr, "%d\n", fillValue);
         }else{
-            if(strcmp(opcode, "add") == 0 || strcmp(opcode, "nand") == 0){
+            if(strcmp(opcode, "add") == 0 || strcmp(opcode, "nand") == 0){ 
                 uint32_t opcodeNumber;
                 if(strcmp(opcode, "add") == 0){
                     opcodeNumber = 0;
@@ -173,7 +178,7 @@ int main(int argc, char *argv[])
                 machineCode = 6 << 22;
             }else if(strcmp(opcode, "noop") == 0){
                 machineCode = 7 << 22;
-            }else{
+            }else{ //ถ้าopcodeไม่ตรงกับที่กำหนดให้ขึ้นerrorแล้วexit
                 printf("error: unknown opcode [%s] at line %d\n", opcode, lineNumber);
                 exit(1);
             }
@@ -250,7 +255,7 @@ int isNumber(char *string) // 0 used
     return( (sscanf(string, "%d", &i)) == 1);
 }
 
-int findLabelAddress(const char *name, const Symbol table[], int count)
+int findLabelAddress(const char *name, const Symbol table[], int count) //ค้นหาที่อยู่ของ label ใน symbol table ถ้าไม่พบให้แสดง error และ exit
 {
     for (int i = 0; i < count; i++) {
         if (strcmp(table[i].name, name) == 0) {
@@ -262,7 +267,7 @@ int findLabelAddress(const char *name, const Symbol table[], int count)
     exit(1);
 }
 
-int convertNumber(const char *text, long *result)
+int convertNumber(const char *text, long *result) //แปลง string เป็น long ถ้าไม่สามารถแปลงได้ให้ return 0 ถ้าแปลงได้ให้ return 1
 {
     char *pointingIndex;
 
@@ -273,25 +278,25 @@ int convertNumber(const char *text, long *result)
         return 0;
     }
 
-    if (errno == ERANGE) {
+    if (errno == ERANGE) { // ตรวจสอบว่าค่าที่แปลงได้เกินขอบเขตของ long หรือไม่
         printf("error: number out of range: %s\n", text);
         exit(1);
     }
 
-    *result = value;
+    *result = value; 
     return 1;
 }
 
-int convertRegister(const char *text)
+int convertRegister(const char *text) //แปลง string เป็น int
 {
     long number;
 
-    if (!convertNumber(text, &number)) {
+    if (!convertNumber(text, &number)) { //ถ้าไม่สามารถแปลง string เป็น long ได้ให้แสดง error และ exit
         printf("error: invalid register: [%s]\n", text);
         exit(1);
     }
 
-    if (number < 0 || number > 7) {
+    if (number < 0 || number > 7) { //เช็คว่าค่าที่แปลงได้อยู่ในช่วง 0-7 หรือไม่
         printf("error: register out of range: %s\n", text);
         exit(1);
     }
@@ -299,16 +304,16 @@ int convertRegister(const char *text)
     return (int)number;
 }
 
-int convertOffset(const char *text, const char *opcode, int currentAddress, const Symbol table[], int count) 
+int convertOffset(const char *text, const char *opcode, int currentAddress, const Symbol table[], int count)  //แปลง string เป็น int
 { 
     long offset; 
  
-    if (text[0] == '\0') {
+    if (text[0] == '\0') { //ถ้าไม่มี offset ให้แสดง error และ exit
         printf("error: missing offset\n"); 
         exit(1); 
     } 
  
-    if (!convertNumber(text, &offset)) { 
+    if (!convertNumber(text, &offset)) {  //ถ้าไม่สามารถแปลง string เป็น long ได้ให้หาที่อยู่ของ label ใน symbol table
         int targetAddress = findLabelAddress(text, table, count);
  
         if (strcmp(opcode, "beq") == 0) {
@@ -318,7 +323,7 @@ int convertOffset(const char *text, const char *opcode, int currentAddress, cons
         } 
     } 
  
-    if (offset < -32768 || offset > 32767) { 
+    if (offset < -32768 || offset > 32767) { //เช็คว่าค่าที่แปลงได้อยู่ในช่วง -32768 ถึง 32767 หรือไม่
         printf("error: offset out of range: %ld\n", offset); 
         exit(1); 
     } 
@@ -326,7 +331,7 @@ int convertOffset(const char *text, const char *opcode, int currentAddress, cons
     return (int)offset; 
 }
 
-int32_t resolveFill(const char *text, const Symbol table[], int count){
+int32_t resolveFill(const char *text, const Symbol table[], int count){ //แปลง string เป็น int32_t
     long value;
 
     if(text[0] == '\0'){
@@ -334,11 +339,11 @@ int32_t resolveFill(const char *text, const Symbol table[], int count){
         exit(1);
     }
 
-    if(!convertNumber(text, &value)){
+    if(!convertNumber(text, &value)){ //ถ้าไม่สามารถแปลง string เป็น long ได้ให้หาที่อยู่ของ label ใน symbol table
         value = findLabelAddress(text, table, count);
     }
 
-    if(value < INT32_MIN || value > INT32_MAX){
+    if(value < INT32_MIN || value > INT32_MAX){ //เช็คว่าค่าที่แปลงได้อยู่ในช่วงของ int32_t หรือไม่
         printf("error: .fill value out of range: %s\n", text);
         exit(1);
     }
