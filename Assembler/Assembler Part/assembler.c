@@ -3,7 +3,6 @@
 #include <string.h>
 #include <errno.h>
 #include <stdint.h>
-#include <inttypes.h>
 #include <ctype.h>
 
 #define MAXLINELENGTH 1000
