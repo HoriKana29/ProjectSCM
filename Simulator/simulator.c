@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <string.h> // memset
 
 #define NUMMEMORY 65536 /* maximum number of words in memory */
 #define NUMREGS 8 /* number of machine registers */
@@ -37,6 +37,9 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
+    // set ค่าตัวแปรเป็น 0 ทุกครั้งก่อนเริ่มโปรแกรม 
+    memset (&state, 0 ,sizeof(state) ) ; // เข้าถึงที่อยู่ address จริงแล้วทำการกำหนดค่า ใหม่ 
+
     /* read in the entire machine-code file into memory */
     for (state.numMemory = 0; fgets(line, MAXLINELENGTH, filePtr) != NULL;
 	state.numMemory++) {
@@ -46,11 +49,31 @@ int main(int argc, char *argv[])
 	}
 	printf("memory[%d]=%d\n", state.numMemory, state.mem[state.numMemory]);
     }
+   
+
+    int count = 0  ; 
+    while(1) {          // วนจนกว่าจะเจอ halt
+        printState(&state) ; 
+        int ins = state.mem[state.pc] ;   // fetch Ins ที่ pc ชี้อยู่ 
+        int opc = (ins >> 22 ) &  0x7 ;  // decode เลื่อนบิต 22-24  (R shift ) เก็บไว้ 3 bit
+        state.pc++ ; 
+        count++ ; 
+
+        if (opc == 6 ) {  // opcode halt (เจอ หยุด )
+            printf("halted \n");
+            printf("total of %d instructions executed\n",count);
+             printf("last state :\n") ; 
+            printState(&state) ; 
+            return 0  ; 
+        }
+
+    }
+
 
     return(0);
 }
 
-void printState(stateType *statePtr)
+void printState(stateType *statePtr) // print pc , mem[] , reg[0-7]
 {
     int i;
     printf("\n@@@\nstate:\n");
@@ -66,11 +89,16 @@ void printState(stateType *statePtr)
     printf("end state\n");
 }
 
-int convertNum(int num)
+
+// 0-> 32767 (+) , 32768 -> 65535 (-)
+// lw , sw , beq
+int convertNum(int num) // sign extend
 {
     /* convert a 16-bit number into a 32-bit integer */
-    if (num & (1 << 15)) {
-    num -= (1 << 16);
+    //  concept : ตัดbit ที่เหลือออกเช็คแค่ bit แรกสุดท้าย (bit 16 )ว่าเป็น 1 ไหมโดยการ AND 
+    // 1 << 15      = 1000 0000 0000 0000
+    if (num & (1 << 15)) {  // num >= 32768 ไหม (อยู่ในช่วงค่าลบไหม?) // shift : pointer 
+    num -= (1 << 16);  // ลบด้วย 65536(จะได้ค่าติดลบ)
     }
-    return(num);
+    return(num); // return ค่าติดลบนั้น  // ถ้าค่าบวกจะไม่เข้าcondตั้งแต่แรกอยู่แล้ว return num ได้ค่าบวกเหมือนเดิม
 }
