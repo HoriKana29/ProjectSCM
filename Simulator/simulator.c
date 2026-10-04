@@ -56,6 +56,12 @@ int main(int argc, char *argv[])
         printState(&state) ; 
         int ins = state.mem[state.pc] ;   // fetch Ins ที่ pc ชี้อยู่ 
         int opc = (ins >> 22 ) &  0x7 ;  // decode เลื่อนบิต 22-24  (R shift ) เก็บไว้ 3 bit
+
+        int regA = (ins >> 19  ) & 0x7; 
+        int regB = (ins >> 16) & 0x7 ; 
+        int dest = ins & 0x7 ; 
+        int offset = convertNum(ins & 0xFFFF) ; 
+
         state.pc++ ; 
         count++ ; 
 
