@@ -82,6 +82,12 @@ int main(int argc, char *argv[])
             case 4: if (state.reg[regA] == state.reg[regB]) {
                 state.pc += offset ; 
             }
+            // jalr 
+            case 5: {
+                int target = state.reg[regA] ; // บรรทัดที่โดดไป
+                state.reg[regB] = state.pc  ; // บรรทัดที่กลับมาทำ
+                state.pc = target ; //set ค่า pc เป็น pc ของบรรทัดที่โดดไป
+            }
             break; 
             // halt 
             case 6:    
@@ -90,6 +96,9 @@ int main(int argc, char *argv[])
              printf("last state :\n") ; 
             printState(&state) ; 
             return 0  ; 
+            // noop 
+            case 7: 
+                break; 
         }
     }
 
