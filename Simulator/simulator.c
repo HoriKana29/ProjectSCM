@@ -78,6 +78,11 @@ int main(int argc, char *argv[])
             //sw
             case 3: state.mem[state.reg[regA] + offset] = state.reg[regB];
             break ; 
+            // beq 
+            case 4: if (state.reg[regA] == state.reg[regB]) {
+                state.pc += offset ; 
+            }
+            break; 
             // halt 
             case 6:    
             printf("halted \n");
