@@ -69,8 +69,8 @@ void printState(stateType *statePtr)
 int convertNum(int num)
 {
     /* convert a 16-bit number into a 32-bit integer */
-    if (num & (1 << 15)) {
-    num -= (1 << 16);
+    if (num & (1 << 15)) { // เลื่อนไปทางซ้าย 15 บิตเพื่อตรวจสอบบิตที่ 15 (บิตเครื่องหมาย)
+    num -= (1 << 16); // เอา num มา AND กับค่านั้น ผลที่ได้จะเหลือแค่าบิตที่ 0-15 ของ num และลบด้วย 2^16 เพื่อให้ได้ค่าลบที่ถูกต้อง
     }
     return(num);
 }
