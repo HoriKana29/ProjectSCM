@@ -65,14 +65,27 @@ int main(int argc, char *argv[])
         state.pc++ ; 
         count++ ; 
 
-        if (opc == 6 ) {  // opcode halt (เจอ หยุด )
+        switch(opc) {
+            // add
+            case 0: state.reg[dest] = state.reg[regA] + state.reg[regB] ; 
+            break ; 
+            //nand 
+            case 1: state.reg[dest] = ~(state.reg[regA] & state.reg[regB]) ; 
+            break ; 
+            //lw 
+            case 2: state.reg[regB] = state.mem[state.reg[regA]  + offset] ; 
+            break;
+            //sw
+            case 3: state.mem[state.reg[regA] + offset] = state.reg[regB];
+            break ; 
+            // halt 
+            case 6:    
             printf("halted \n");
             printf("total of %d instructions executed\n",count);
              printf("last state :\n") ; 
             printState(&state) ; 
             return 0  ; 
         }
-
     }
 
 
