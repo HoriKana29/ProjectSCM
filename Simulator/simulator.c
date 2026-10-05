@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
             case 4: if (state.reg[regA] == state.reg[regB]) {
                 state.pc += offset ; 
             }
+             break;
             // jalr 
             case 5: {
                 int target = state.reg[regA] ; // บรรทัดที่โดดไป
