@@ -2,3 +2,5 @@
 out.txt
 simulator
 Simulator
+assembler
+*.dSYM/
