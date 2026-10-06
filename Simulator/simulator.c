@@ -93,9 +93,9 @@ int main(int argc, char *argv[])
             break; 
             // halt 
             case 0b110:    
-            printf("halted \n");
+            printf("machine halted\n");
             printf("total of %d instructions executed\n",count);
-             printf("last state :\n") ; 
+             printf("final state of machine:\n") ; 
             printState(&state) ; 
             return 0  ; 
             // noop 
