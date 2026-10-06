@@ -56,8 +56,9 @@ int main(int argc, char *argv[])
         printState(&state) ; 
         int ins = state.mem[state.pc] ;   // fetch Ins ที่ pc ชี้อยู่ 
         int opc = (ins >> 22 ) &  0x7 ;  // decode เลื่อนบิต 22-24  (R shift ) เก็บไว้ 3 bit
-
-        int regA = (ins >> 19  ) & 0x7; 
+        // 0x7 : 0000 0000 0000 0000 0000 0000 0000 0111
+         
+        int regA = (ins >> 19  ) & 0x7;      
         int regB = (ins >> 16) & 0x7 ; 
         int dest = ins & 0x7 ; 
         int offset = convertNum(ins & 0xFFFF) ; 
@@ -65,40 +66,40 @@ int main(int argc, char *argv[])
         state.pc++ ; 
         count++ ; 
 
-        switch(opc) {
+        switch(opc) { // 101
             // add
-            case 0: state.reg[dest] = state.reg[regA] + state.reg[regB] ; 
+            case 0b000: state.reg[dest] = state.reg[regA] + state.reg[regB] ; 
             break ; 
             //nand 
-            case 1: state.reg[dest] = ~(state.reg[regA] & state.reg[regB]) ; 
+            case 0b001: state.reg[dest] = ~(state.reg[regA] & state.reg[regB]) ; 
             break ; 
             //lw 
-            case 2: state.reg[regB] = state.mem[state.reg[regA]  + offset] ; 
+            case 0b010: state.reg[regB] = state.mem[state.reg[regA]  + offset] ; 
             break;
             //sw
-            case 3: state.mem[state.reg[regA] + offset] = state.reg[regB];
+            case 0b011: state.mem[state.reg[regA] + offset] = state.reg[regB];
             break ; 
             // beq 
-            case 4: if (state.reg[regA] == state.reg[regB]) {
+            case 0b100: if (state.reg[regA] == state.reg[regB]) {
                 state.pc += offset ; 
             }
              break;
             // jalr 
-            case 5: {
+            case 0b101: {
                 int target = state.reg[regA] ; // บรรทัดที่โดดไป
                 state.reg[regB] = state.pc  ; // บรรทัดที่กลับมาทำ
                 state.pc = target ; //set ค่า pc เป็น pc ของบรรทัดที่โดดไป
             }
             break; 
             // halt 
-            case 6:    
+            case 0b110:    
             printf("halted \n");
             printf("total of %d instructions executed\n",count);
              printf("last state :\n") ; 
             printState(&state) ; 
             return 0  ; 
             // noop 
-            case 7: 
+            case 0b111: 
                 break; 
         }
     }
