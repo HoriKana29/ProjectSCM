@@ -1,0 +1,6 @@
+*.out
+out.txt
+simulator
+Simulator
+assembler
+*.dSYM/
