@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2)) 
     {
         lineNumber++;
-        if (label[0] == '\0' && opcode[0] == '\0') { //ถ้าไม่มีlabelและopcodeให้ข้ามไป
+        if (label[0] == '\0' && opcode[0] == '\0') { //ถ้าไม่มีlabelและopcodeให้ทำงานต่อไป
             continue;
         }
 
@@ -75,25 +75,25 @@ int main(int argc, char *argv[])
             if(leng > 6) { //เช็คความยาวของlabel ถ้าเกิน 6ตัวอักษรให้ขึ้นerrorแล้วข้าม
                 printf("error: invalid label %s Length more than 6 characters\n", label);
                 exit(1);
-            }else if(!isalpha(label[0])) { //เช็คตัวอักษรตัวแรกของlabel ถ้าไม่ใช่ตัวอักษรให้ขึ้นerrorแล้วข้าม
+            }else if(!isalpha(label[0])) { //เช็คตัวอักษรตัวแรกของlabel ถ้าไม่ใช่ตัวอักษรให้ขึ้นerrorแล้วจบการทำงาน
                 printf("error: invalid label %s Not starting with alphabet\n", label);
                 exit(1);
             }
-            for(int i = 0; i < leng; i++){ //เช็คตัวอักษรของlabelตัวที่เหลือ ถ้าไม่ใช่ตัวอักษรหรือตัวเลขให้ขึ้นerrorแล้วข้าม
+            for(int i = 0; i < leng; i++){ //เช็คตัวอักษรของlabelตัวที่เหลือ ถ้าไม่ใช่ตัวอักษรหรือตัวเลขให้ขึ้นerrorแล้วจบการทำงาน
                 if(!isalnum(label[i])) {
                     printf("error: invalid label %s is Not alphanumeric\n", label);
                     exit(1);
                 }
             }
 
-            for(int i = 0; i < symbolCountNumber; i++){ //เช็คlabelซ้ำ ถ้าซ้ำให้ขึ้นerrorแล้วข้าม
+            for(int i = 0; i < symbolCountNumber; i++){ //เช็คlabelซ้ำ ถ้าซ้ำให้ขึ้นerrorแล้วจบการทำงาน
                 if(strcmp(symbolTable[i].name, label) == 0){
                     printf("error: duplicate label %s\n", label);
                     exit(1);
                 }
             }
 
-            if(symbolCountNumber >= MAXSYMBOLS){ //เช็คsymbolTableเต็ม ถ้าเต็มให้ขึ้นerrorแล้วข้าม
+            if(symbolCountNumber >= MAXSYMBOLS){ //เช็คsymbolTableเต็ม ถ้าเต็มให้ขึ้นerrorแล้วจบการทำงาน
                 printf("error: symbol table is full\n");
                 exit(1);
             }
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
     while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2))
     {
         lineNumber++;
-        if (label[0] == '\0' && opcode[0] == '\0') { //ถ้าไม่มีlabelและopcodeให้ข้ามไป
+        if (label[0] == '\0' && opcode[0] == '\0') { //ถ้าไม่มีlabelและopcodeให้ทำงานตัวต่อไป
             continue;
         }
 
