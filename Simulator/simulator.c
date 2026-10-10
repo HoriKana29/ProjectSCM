@@ -84,11 +84,13 @@ int main(int argc, char *argv[])
                 state.pc += offset ; 
             }
              break;
-            // jalr 
-            case 0b101: {
-                int target = state.reg[regA] ; // บรรทัดที่โดดไป
-                state.reg[regB] = state.pc  ; // บรรทัดที่กลับมาทำ
-                state.pc = target ; //set ค่า pc เป็น pc ของบรรทัดที่โดดไป
+            // jalr                                                   x1= 0 
+            case 0b101: { // jalr :  regA(addr dest)  regB (pc+1 )   jalr  exit ,  exit 
+                                                                // pc+1  add x1,x3 ,x8      x3 = 5 , x8 = 2
+                                                                //pc _  exit: x0,x0,x5      x1= 0   result : x1=0 
+                state.reg[regB] = state.pc; 
+                state.pc = state.reg[regA]; 
+               
             }
             break; 
             // halt 
