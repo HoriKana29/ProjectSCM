@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	}
 	printf("memory[%d]=%d\n", state.numMemory, state.mem[state.numMemory]);
     }
-   
+    printf("\n");
 
     int count = 0  ; 
     while(1) {          // วนจนกว่าจะเจอ halt
