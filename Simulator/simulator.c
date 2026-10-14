@@ -72,24 +72,26 @@ int main(int argc, char *argv[])// จำนวนคำสั่ง , คำส
         count++ ; 
 
         switch(opc) { // 101
-            // add
+            // add : destReg = reg[A] + reg[B]
             case 0b000: state.reg[dest] = state.reg[regA] + state.reg[regB] ; 
             break ; 
-            //nand 
+            //nand : destReg = not (reg[A] & reg[B]) / AND กันทีละตัวแล้วกลับ bit
             case 0b001: state.reg[dest] = ~(state.reg[regA] & state.reg[regB]) ; 
             break ; 
-            //lw 
+            //lw  : load ค่า ใน mem มาเก็บไว้ที่ regฺ[B] / reg[B] = reg[A] + offset
             case 0b010: state.reg[regB] = state.mem[state.reg[regA]  + offset] ; 
             break;
-            //sw
+            //sw : เก็บค่าใน reg[B] ลง memory / mem = reg[A] + offset
             case 0b011: state.mem[state.reg[regA] + offset] = state.reg[regB];
             break ; 
-            // beq 
+            // beq : ถ้า  reg[A] == reg[B]  ให้กระโดดไปที่ pc+1+offset 
+            // pc + 1 ถูกทำก่อนเข้า switch แล้ว ใน case นี้ จึงบวกแต่ offset (offset ติดลบได้ เพื่อใช้กระโดด ย้อนกลับได้ )
             case 0b100: if (state.reg[regA] == state.reg[regB]) {
                 state.pc += offset ; 
             }
              break;
-            // jalr                                                 
+            // jalr : เก็บ pc+1 ลง [regB]   จากนั้นกระโดดไป addr ที่อยู่ใน reg[A] 
+            // ถ้า reg[A] กับ reg[B] เป็นตัวเดียวกัน จะกระโดดไปที่ pc+1                                             
             case 0b101: { // jalr :  regA(addr dest)  regB (pc+1 )  
                                                                
                 state.reg[regB] = state.pc; 
