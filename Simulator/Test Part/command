@@ -1,0 +1,2 @@
+./assembler "Test Part/test_***.asm" "Test Part/test_***.mc"
+./simulator "Test Part/test_***.mc" > "Test Part/test_***.out"
