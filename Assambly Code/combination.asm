@@ -73,8 +73,8 @@ base    lw      0       5       one
 
 done    halt
                            
-n           .fill   3
-r           .fill   1
+n           .fill   7
+r           .fill   3
 func        .fill   comb
 sp          .fill   100
 one         .fill   1
